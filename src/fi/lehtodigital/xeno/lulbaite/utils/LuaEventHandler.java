@@ -1,4 +1,4 @@
-package fi.lehtodigital.xeno.lulbaite;
+package fi.lehtodigital.xeno.lulbaite.utils;
 
 import org.luaj.vm2.LuaValue;
 

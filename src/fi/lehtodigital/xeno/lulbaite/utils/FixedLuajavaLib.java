@@ -1,5 +1,6 @@
-package fi.lehtodigital.xeno.lulbaite;
+package fi.lehtodigital.xeno.lulbaite.utils;
 
+import fi.lehtodigital.xeno.lulbaite.XenoScriptPlugin;
 import org.luaj.vm2.lib.jse.LuajavaLib;
 
 public class FixedLuajavaLib extends LuajavaLib {

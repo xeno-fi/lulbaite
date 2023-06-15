@@ -7,6 +7,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.StringJoiner;
 
@@ -22,15 +23,14 @@ public class CommandXScript implements TabExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         
         if (!sender.hasPermission("xscript.admin")) {
-            sender.sendMessage(XUtil.INFO_PREFIX + "Oikeutesi eivät riitä.");
+            sender.sendMessage(XUtil.INFO_PREFIX + "Insufficient permissions.");
             return true;
         }
         
         if (args.length == 0) {
-            sender.sendMessage(XUtil.INFO_PREFIX + "Käytä:");
-            sender.sendMessage("    §f/xscript eval [...] §7- suorita JS-pätkä heti");
-            sender.sendMessage("    §f/xscript reload §7- lataa komentosarjat uudelleen");
-            sender.sendMessage("    §f/xscript location §7- tulosta kopioitava sijaintitieto");
+            sender.sendMessage(XUtil.INFO_PREFIX + "Usage:");
+            sender.sendMessage("    §f/xscript eval [...] §7- evaluate Lua immediately");
+            sender.sendMessage("    §f/xscript reload §7- reload scripts");
             return true;
         }
         
@@ -40,14 +40,14 @@ public class CommandXScript implements TabExecutor {
                 
                 StringJoiner scriptText = new StringJoiner(" ");
                 Arrays.stream(args).skip(1).forEach(scriptText::add);
-                String inlineScript = "(function(){" + scriptText.toString() + "})();";
+                String inlineScript = "(function()\n" + scriptText.toString() + "\nend)()";
                 
                 plugin.getLogger().info("Evaluating: " + inlineScript);
                 
                 try {
                     plugin.eval(inlineScript);
                 } catch (Exception e) {
-                    sender.sendMessage(XUtil.INFO_PREFIX + "Komentosarjan ajamisessa ilmeni virheitä:");
+                    sender.sendMessage(XUtil.INFO_PREFIX + "Errors occurred while evaluating your script:");
                     sender.sendMessage(e.getMessage());
                     e.printStackTrace();
                 }
@@ -59,9 +59,9 @@ public class CommandXScript implements TabExecutor {
                 long timeStart = System.currentTimeMillis();
                 
                 if (!plugin.reloadScripts()) {
-                    sender.sendMessage(XUtil.INFO_PREFIX + "§cUudelleenlatauksessa ilmeni virheitä");
+                    sender.sendMessage(XUtil.INFO_PREFIX + "§cErrors occurred while reloading scripts");
                 } else {
-                    sender.sendMessage(XUtil.INFO_PREFIX + "Komentosarjat ladattiin uudelleen, aikaa kului " + (System.currentTimeMillis() - timeStart) + "ms");
+                    sender.sendMessage(XUtil.INFO_PREFIX + "Scripts reloaded, time passed: " + (System.currentTimeMillis() - timeStart) + "ms");
                 }
                 
                 break;
@@ -72,10 +72,24 @@ public class CommandXScript implements TabExecutor {
         return true;
         
     }
+    
+    
+    private static final List<String> TAB_BASE_ARGS = Arrays.asList(
+            "reload",
+            "eval"
+    );
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
+        
+        if (args.length == 1) {
+            return TAB_BASE_ARGS;
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("eval")) {
+            return Collections.singletonList("§b[lua]");
+        }
+        
         return null;
+        
     }
     
 }

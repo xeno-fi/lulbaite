@@ -1,12 +1,12 @@
 name: Lulbaite
 api-version: 1.19
 description: LuaJ based scripting for Spigot and Paper
-author: Roni Lehto
-website: https://lehtodigital.fi/
+author: Xeno
+website: https://github.com/xeno-fi/lulbaite/
 softdepend: [XServerUtils, XSurvivalUtils, Amethyst, CoreProtect, WorldEdit, WorldGuard, FastAsyncWorldEdit, Vault, HolographicDisplays, ProtocolLib]
 commands:
   xscript:
-    description: XenoScript commands
+    description: Lulbaite administrative commands
     permission: xscript.admin
     aliases: [lulbaite, xs]
 permissions: 

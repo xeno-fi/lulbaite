@@ -13,6 +13,28 @@ plugin = PluginManager:getPlugin('Lulbaite')
 logger = plugin:getLogger()
 Util = plugin:getUtil()
 
+function size(T)
+    local count = 0
+    for _ in pairs(T) do count = count + 1 end
+    return count
+end
+
+
+function string.starts(str, start)
+    return string.sub(str, 1, string.len(start)) == start
+end
+
+function string.split(inputstr, sep)
+    if sep == nil then
+        sep = "%s"
+    end
+    local t={}
+    for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+        table.insert(t, str)
+    end
+    return t
+end
+
 local __onDisable = {}
 
 function __registerOnDisable(fn)
@@ -25,22 +47,30 @@ function __runOnDisable()
     end
 end
 
+
+function registerCommand(commandLabel, callback)
+    local luaCommandCallback = luajava.createProxy('fi.lehtodigital.xeno.lulbaite.utils.LuaCommandCallback', {
+        run = callback
+    })
+    plugin:registerCommand(commandLabel, luaCommandCallback)
+end
+
 function registerEvent(eventName, callback)
-    local luaEventHandler = luajava.createProxy('fi.lehtodigital.xeno.lulbaite.LuaEventHandler', {
+    local luaEventHandler = luajava.createProxy('fi.lehtodigital.xeno.lulbaite.utils.LuaEventHandler', {
         run = callback
     })
     plugin:registerEvent(eventName, luaEventHandler)
 end
 
 function runLater(callback, time)
-    local luaRunnable = luajava.createProxy('fi.lehtodigital.xeno.lulbaite.LuaRunnable', {
+    local luaRunnable = luajava.createProxy('fi.lehtodigital.xeno.lulbaite.utils.LuaRunnable', {
         run = callback
     })
     plugin:runLater(luaRunnable, time)
 end
 
 function runTimer(callback, delay, time)
-    local luaRunnable = luajava.createProxy('fi.lehtodigital.xeno.lulbaite.LuaRunnable', {
+    local luaRunnable = luajava.createProxy('fi.lehtodigital.xeno.lulbaite.utils.LuaRunnable', {
         run = callback
     })
     plugin:runTimer(luaRunnable, delay, time)

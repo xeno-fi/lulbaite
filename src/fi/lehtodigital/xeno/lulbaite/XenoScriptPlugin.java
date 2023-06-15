@@ -2,6 +2,10 @@ package fi.lehtodigital.xeno.lulbaite;
 
 import com.moandjiezana.toml.Toml;
 import fi.lehtodigital.xeno.lulbaite.command.CommandXScript;
+import fi.lehtodigital.xeno.lulbaite.utils.FixedLuajavaLib;
+import fi.lehtodigital.xeno.lulbaite.utils.LuaCommandCallback;
+import fi.lehtodigital.xeno.lulbaite.utils.LuaEventHandler;
+import fi.lehtodigital.xeno.lulbaite.utils.LuaRunnable;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
@@ -19,6 +23,9 @@ import org.luaj.vm2.lib.jse.*;
 
 import java.io.*;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -43,19 +50,21 @@ public class XenoScriptPlugin extends JavaPlugin implements Listener {
     
     private Globals globals = null;
     
+    private final Map<String, Class<?>> classCache = new ConcurrentHashMap<>();
+    private final Map<String, LuaCommandCallback> commandCache = new ConcurrentHashMap<>();
+    
     public void onEnable() {
-        
-
-        //System.setProperty("polyglot.lua.nashorn-compat", "true");
-        //System.setProperty("js.ecmascript-version", "2021");
         
         instance = this;
         logger.info("Starting up Lulbaite...");
         
-        if (!this.getDataFolder().exists())
+        if (!this.getDataFolder().exists()) {
             this.getDataFolder().mkdirs();
+        }
         
-        File configFile = new File(this.getDataFolder().getAbsolutePath() + "/config.toml");
+        final String pathDataFolder = this.getDataFolder().getAbsolutePath();
+        
+        File configFile = Paths.get(pathDataFolder, "config.toml").toFile();
         if (!configFile.exists()) {
             try {
                 logger.info("Saving default config...");
@@ -65,7 +74,7 @@ public class XenoScriptPlugin extends JavaPlugin implements Listener {
             }
         }
         
-        scriptsFile = new File(this.getDataFolder().getAbsolutePath() + "/scripts.toml");
+        scriptsFile = Paths.get(pathDataFolder, "scripts.toml").toFile();
         if (!scriptsFile.exists()) {
             try {
                 logger.info("Saving script config...");
@@ -75,7 +84,7 @@ public class XenoScriptPlugin extends JavaPlugin implements Listener {
             }
         }
 
-        scriptsFolder = new File(this.getDataFolder().getAbsolutePath() + "/scripts/");
+        scriptsFolder = Paths.get(pathDataFolder, "scripts").toFile();
         if (!scriptsFolder.exists() || !scriptsFolder.isDirectory()) {
             logger.info("Creating scripts folder...");
             scriptsFolder.mkdirs();
@@ -121,11 +130,10 @@ public class XenoScriptPlugin extends JavaPlugin implements Listener {
         HandlerList.unregisterAll((Plugin)this);
         Bukkit.getScheduler().cancelTasks(this);
         
-        //ClassLoader cl = this.getClass().getClassLoader();
-        //Thread.currentThread().setContextClassLoader(Context.class.getClassLoader());
-        
         scriptConfig = (new Toml()).read(scriptsFile);
-
+        commandCache.clear();
+        
+        // if reload, run disable hook tasks
         if (globals != null) {
             try {
                 logger.info("Attempting to disable scripts...");
@@ -137,6 +145,7 @@ public class XenoScriptPlugin extends JavaPlugin implements Listener {
             }
         }
         
+        // manually load globals, as FixedLuajavaLib fixes class loading
         globals = JsePlatform.standardGlobals();
         globals.load(new JseBaseLib());
         globals.load(new PackageLib());
@@ -149,6 +158,32 @@ public class XenoScriptPlugin extends JavaPlugin implements Listener {
         globals.load(new JseOsLib());
         globals.load(new FixedLuajavaLib());
         
+        globals.set("instanceof", CoerceJavaToLua.coerce(new TwoArgFunction() {
+            @Override
+            public LuaValue call(LuaValue value, LuaValue classValue) {
+                
+                if (!classValue.isuserdata()) {
+                    throw new RuntimeException("Second argument to 'instanceof' must be userdata");
+                }
+                
+                Object obj = classValue.checkuserdata();
+                
+                if (value.isuserdata()) {
+                    Object rawUserdata = value.checkuserdata();
+                    if (rawUserdata instanceof Class<?>) {
+                        return LuaValue.valueOf(((Class<?>)rawUserdata).isInstance(obj));
+                    } else {
+                        throw new IllegalArgumentException("First argument to 'instanceof' must be either string or a class");
+                    }
+                }
+
+                String className = value.checkjstring();
+                return LuaValue.valueOf(isInstanceOf(obj, className));
+                
+            }
+        }));
+        
+        // run bas code
         try {
             LuaValue baseChunk = globals.load(getResourceFileAsString("base.lua"));
             baseChunk.call();
@@ -213,33 +248,50 @@ public class XenoScriptPlugin extends JavaPlugin implements Listener {
     }
     
     
-    private Map<String, Command> commandCache = new ConcurrentHashMap<>();
-
-    public void registerCommand(String commandName, Command command) {
+    /*
+     * -- The following methods provide some basic functionality for the scripts
+     */
+    public void registerCommand(String commandName, LuaCommandCallback callback) {
 
         if (!commandCache.containsKey(commandName)) {
 
             try {
 
-                Field bukkitCommandMap = Bukkit.getServer().getClass().getDeclaredField("commandMap");
+                Class<?> craftServer = Bukkit.getServer().getClass();
+                
+                Field bukkitCommandMap = craftServer.getDeclaredField("commandMap");
                 bukkitCommandMap.setAccessible(true);
-
+                
+                Method methodSyncCommands = craftServer.getDeclaredMethod("syncCommands");
+                methodSyncCommands.setAccessible(true);
+                methodSyncCommands.invoke(Bukkit.getServer());
+                
                 CommandMap commandMap = (CommandMap) bukkitCommandMap.get(Bukkit.getServer());
                 commandMap.register(commandName, new Command(commandName) {
                     @Override
                     public boolean execute(CommandSender commandSender, String label, String[] args) {
-                        commandCache.get(commandName).execute(commandSender, label, args);
+                        commandCache.get(commandName).run(
+                                CoerceJavaToLua.coerce(commandSender),
+                                CoerceJavaToLua.coerce(label),
+                                CoerceJavaToLua.coerce(args)
+                        );
                         return true;
                     }
                 });
 
-            } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+            } catch (NoSuchFieldException
+                     | SecurityException
+                     | IllegalArgumentException
+                     | IllegalAccessException
+                     | InvocationTargetException
+                     | NoSuchMethodException e) {
+                logger.severe("Unable to register command; reflection error");
                 e.printStackTrace();
             }
-            
+
         }
         
-        commandCache.put(commandName, command);
+        commandCache.put(commandName, callback);
 
     }
 
@@ -268,6 +320,44 @@ public class XenoScriptPlugin extends JavaPlugin implements Listener {
         Bukkit.getScheduler().runTaskTimer(this, () -> {
             callback.run();
         }, delay, time);
+    }
+    
+    
+    
+    
+    
+    
+    
+    private Class<?> getClassForName(String name) {
+        
+        if (classCache.containsKey(name)) {
+            return classCache.get(name);
+        }
+
+        Class<?> cl;
+        
+        try {
+            cl = Class.forName(name);
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+        
+        classCache.put(name, cl);
+        return cl;
+        
+        
+    }
+    
+    private boolean isInstanceOf(Object obj, String className) {
+        
+        Class<?> cl = getClassForName(className);
+        
+        if (cl == null) {
+            throw new RuntimeException("No such class was found: " + className);
+        }
+        
+        return cl.isInstance(obj);
+        
     }
 
 }
