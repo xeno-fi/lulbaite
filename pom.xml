@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fi.lehtodigital.xeno</groupId>
     <artifactId>Lulbaite</artifactId>
-    <version>0.0.2</version>
+    <version>0.2.1</version>
     <name>Lulbaite</name>
 
     <build>
