@@ -1,4 +1,9 @@
-# Lulbaite
+<p align="center">
+
+![](https://lehtodigital.fi/f/JDidg)
+
+</p>
+
 **Lulbaite** is a Spigot/Paper scripting plugin.
 Using Lulbaite, you can write Lua scripts to add functionality to your server.
 
