@@ -12,5 +12,5 @@ commands:
 permissions: 
   xscript.admin:
     description: Permission to manage and use the plugin
-version: 0.2.1
+version: 0.2.2
 main: fi.lehtodigital.xeno.lulbaite.XenoScriptPlugin
