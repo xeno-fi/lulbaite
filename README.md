@@ -1,3 +1,7 @@
+![GitHub](https://img.shields.io/github/license/xeno-fi/lulbaite)
+![GitHub top language](https://img.shields.io/github/languages/top/xeno-fi/lulbaite)
+![GitHub release (release name instead of tag name)](https://img.shields.io/github/v/release/xeno-fi/lulbaite)
+
 <p align="center">
 
 ![](https://lehtodigital.fi/f/JDidg)
@@ -27,6 +31,10 @@ or even [data packs](https://minecraft.fandom.com/wiki/Data_pack).
 ## Features
 - ⚡️ Lightning fast [LuaJ](https://github.com/luaj/luaj)
 - ⛏️ Convenience methods for fast and useful scripting
+  - Event listeners
+  - Command registration
+  - Scheduler
+  - HTTP requests (async and sync)
 - ♻️ Fast reloading - no need to restart your server when programming
 
 ## Installation
