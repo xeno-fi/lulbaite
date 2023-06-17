@@ -252,7 +252,8 @@ public class XenoScriptPlugin extends JavaPlugin implements Listener {
      * -- The following methods provide some basic functionality for the scripts
      */
     public void registerCommand(String commandName, LuaCommandCallback callback) {
-
+        
+        
         if (!commandCache.containsKey(commandName)) {
 
             try {
@@ -311,14 +312,14 @@ public class XenoScriptPlugin extends JavaPlugin implements Listener {
     }
     
     public void runLater(LuaRunnable callback, int time) {
-        Bukkit.getScheduler().runTaskLater(this, () -> {
-            callback.run();
+        Bukkit.getScheduler().runTaskLater(this, task -> {
+            callback.run(CoerceJavaToLua.coerce(task));
         }, time);
     }
     
     public void runTimer(LuaRunnable callback, int delay, int time) {
-        Bukkit.getScheduler().runTaskTimer(this, () -> {
-            callback.run();
+        Bukkit.getScheduler().runTaskTimer(this, task -> {
+            callback.run(CoerceJavaToLua.coerce(task));
         }, delay, time);
     }
     
