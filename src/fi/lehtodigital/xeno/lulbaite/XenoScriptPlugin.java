@@ -2,10 +2,7 @@ package fi.lehtodigital.xeno.lulbaite;
 
 import com.moandjiezana.toml.Toml;
 import fi.lehtodigital.xeno.lulbaite.command.CommandXScript;
-import fi.lehtodigital.xeno.lulbaite.utils.FixedLuajavaLib;
-import fi.lehtodigital.xeno.lulbaite.utils.LuaCommandCallback;
-import fi.lehtodigital.xeno.lulbaite.utils.LuaEventHandler;
-import fi.lehtodigital.xeno.lulbaite.utils.LuaRunnable;
+import fi.lehtodigital.xeno.lulbaite.utils.*;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
@@ -157,6 +154,8 @@ public class XenoScriptPlugin extends JavaPlugin implements Listener {
         globals.load(new JseIoLib());
         globals.load(new JseOsLib());
         globals.load(new FixedLuajavaLib());
+
+        globals.set("httpRequest", CoerceJavaToLua.coerce(new LuaHTTPRequestFunction()));
         
         globals.set("instanceof", CoerceJavaToLua.coerce(new TwoArgFunction() {
             @Override
@@ -182,6 +181,7 @@ public class XenoScriptPlugin extends JavaPlugin implements Listener {
                 
             }
         }));
+        
         
         // run bas code
         try {
