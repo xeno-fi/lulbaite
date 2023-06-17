@@ -3,15 +3,14 @@
 ![](https://lehtodigital.fi/f/JDidg)
 
 </p>
-<center>
-
-[📕 Documentation](https://github.com/xeno-fi/lulbaite/wiki/1.-Introduction)
+<p align="center">
+<a href="https://github.com/xeno-fi/lulbaite/wiki/1.-Introduction">📕 Documentation</a>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="https://github.com/xeno-fi/lulbaite/releases">⬇️ Download</a>
 &nbsp;&nbsp;&nbsp;&nbsp;
-[⬇️ Download](https://github.com/xeno-fi/lulbaite/releases)
-&nbsp;&nbsp;&nbsp;&nbsp;
-[❗ Issues](https://github.com/xeno-fi/lulbaite/issues)
+<a href="https://github.com/xeno-fi/lulbaite/issues">❗ Issues</a>
+</p>
 
-</center>
 
 **Lulbaite** is a Spigot/Paper scripting plugin.
 Using Lulbaite, you can write Lua scripts to add functionality to your server.
